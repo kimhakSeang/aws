@@ -14,25 +14,27 @@ public class GreetingHandler implements RequestHandler<APIGatewayProxyRequestEve
 
     @Override
     public APIGatewayProxyResponseEvent handleRequest(APIGatewayProxyRequestEvent event, Context context) {
+        try {
+            String username = "Anonymous";
+            if (event.getBody() != null) {
+                Map<String, String> input = objectMapper.readValue(event.getBody(), Map.class);
+                if (input != null) {
+                    username = input.getOrDefault("username", "Anonymous");
+                }
+            }
 
-        try{
-            // Pare JSON Input
-            Map<String, String> input = objectMapper.convertValue(event.getBody(), Map.class);
-
-            String responseBody = "Hello "+ input.getOrDefault("username", "Anonymous");
+            String responseBody = "Hello " + username;
 
             return new APIGatewayProxyResponseEvent()
                     .withStatusCode(HttpStatus.OK.value())
                     .withHeaders(Map.of("Content-Type", "application/json"))
-                    .withBody(responseBody);
+                    .withBody("{\"message\":\"" + responseBody + "\"}");
 
-        } catch (IllegalArgumentException e) {
-            context.getLogger().log("Error : "+ e.getMessage());
+        } catch (Exception e) {  // Catching Exception is safer here (JsonProcessingException)
+            context.getLogger().log("Error : " + e.getMessage());
             return new APIGatewayProxyResponseEvent()
                     .withStatusCode(500)
                     .withBody("{\"error\":\"Internal Server Error\"}");
         }
-
-
     }
 }
